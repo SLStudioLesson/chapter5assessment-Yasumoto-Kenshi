@@ -45,7 +45,10 @@ public class TaskUI {
      */
     public void displayMenu() {
         System.out.println("タスク管理アプリケーションにようこそ!!");
-
+    
+        // ログイン処理を実行
+        inputLogin();
+    
         // メインメニュー
         boolean flg = true;
         while (flg) {
@@ -54,13 +57,15 @@ public class TaskUI {
                 System.out.println("1. タスク一覧, 2. タスク新規登録, 3. ログアウト");
                 System.out.print("選択肢：");
                 String selectMenu = reader.readLine();
-
+    
                 System.out.println();
-
+    
                 switch (selectMenu) {
                     case "1":
+                        taskLogic.showAll(loginUser); // タスク一覧表示
                         break;
                     case "2":
+                        inputNewInformation(); // タスク新規登録機能を呼び出す
                         break;
                     case "3":
                         System.out.println("ログアウトしました。");
@@ -82,8 +87,29 @@ public class TaskUI {
      *
      * @see com.taskapp.logic.UserLogic#login(String, String)
      */
-    // public void inputLogin() {
-    // }
+    public void inputLogin() {
+        boolean isLoginSuccessful = false;
+    
+        while (!isLoginSuccessful) {
+            try {
+                System.out.print("メールアドレスを入力してください：");
+                String email = reader.readLine();
+                System.out.print("パスワードを入力してください：");
+                String password = reader.readLine();
+    
+                try {
+                    // ログイン成功時に loginUser を設定
+                    loginUser = userLogic.login(email, password);
+                    System.out.println("ユーザー名：" + loginUser.getName() + "でログインしました。\n");
+                    isLoginSuccessful = true;
+                } catch (Exception e) {
+                    System.out.println(e.getMessage() + "\n");
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 
     /**
      * ユーザーからの新規タスク情報を受け取り、新規タスクを登録します。
@@ -91,35 +117,43 @@ public class TaskUI {
      * @see #isNumeric(String)
      * @see com.taskapp.logic.TaskLogic#save(int, String, int, User)
      */
-    // public void inputNewInformation() {
-    // }
+    public void inputNewInformation() {
+        while (true) {
+            try {
+                System.out.print("タスクコードを入力してください：");
+                String codeInput = reader.readLine();
+                if (!isNumeric(codeInput)) {
+                    System.out.println("コードは半角の数字で入力してください\n");
+                    continue;
+                }
 
-    /**
-     * タスクのステータス変更または削除を選択するサブメニューを表示します。
-     *
-     * @see #inputChangeInformation()
-     * @see #inputDeleteInformation()
-     */
-    // public void selectSubMenu() {
-    // }
+                int code = Integer.parseInt(codeInput);
 
-    /**
-     * ユーザーからのタスクステータス変更情報を受け取り、タスクのステータスを変更します。
-     *
-     * @see #isNumeric(String)
-     * @see com.taskapp.logic.TaskLogic#changeStatus(int, int, User)
-     */
-    // public void inputChangeInformation() {
-    // }
+                System.out.print("タスク名を入力してください：");
+                String name = reader.readLine();
+                if (name.length() > 10) {
+                    System.out.println("タスク名は10文字以内で入力してください\n");
+                    continue;
+                }
 
-    /**
-     * ユーザーからのタスク削除情報を受け取り、タスクを削除します。
-     *
-     * @see #isNumeric(String)
-     * @see com.taskapp.logic.TaskLogic#delete(int)
-     */
-    // public void inputDeleteInformation() {
-    // }
+                System.out.print("担当するユーザーのコードを選択してください：");
+                String repUserCodeInput = reader.readLine();
+                if (!isNumeric(repUserCodeInput)) {
+                    System.out.println("ユーザーのコードは半角の数字で入力してください\n");
+                    continue;
+                }
+
+                int repUserCode = Integer.parseInt(repUserCodeInput);
+
+                // タスク登録
+                taskLogic.save(code, name, repUserCode, loginUser);
+                System.out.printf("%sの登録が完了しました。\n\n", name);
+                break;
+            } catch (Exception e) {
+                System.out.println(e.getMessage() + "\n");
+            }
+        }
+    }
 
     /**
      * 指定された文字列が数値であるかどうかを判定します。
@@ -128,7 +162,15 @@ public class TaskUI {
      * @param inputText 判定する文字列
      * @return 数値であればtrue、そうでなければfalse
      */
-    // public boolean isNumeric(String inputText) {
-    //     return false;
-    // }
+    private boolean isNumeric(String inputText) {
+        if (inputText == null || inputText.isEmpty()) {
+            return false; // nullや空文字の場合はfalseを返す
+        }
+        try {
+            int value = Integer.parseInt(inputText); // 整数に変換を試みる
+            return value >= 0; // 負の値でなければtrueを返す
+        } catch (NumberFormatException e) {
+            return false; // 数字に変換できない場合はfalseを返す
+        }
+    }
 }
