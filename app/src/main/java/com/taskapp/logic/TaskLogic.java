@@ -12,37 +12,27 @@ import com.taskapp.model.Task;
 import com.taskapp.model.User;
 
 public class TaskLogic {
-    private final TaskDataAccess taskDataAccess; 
-    // タスクデータへのアクセスを管理するオブジェクト
+    private final TaskDataAccess taskDataAccess; // タスクデータへのアクセスを管理するオブジェクト
 
-    private final LogDataAccess logDataAccess; 
-    // ログデータへのアクセスを管理するオブジェクト
+    private final LogDataAccess logDataAccess; // ログデータへのアクセスを管理するオブジェクト
 
-    private final UserDataAccess userDataAccess; 
-    // ユーザーデータへのアクセスを管理するオブジェクト
+    private final UserDataAccess userDataAccess; // ユーザーデータへのアクセスを管理するオブジェクト
 
-    public TaskLogic() {
-        // デフォルトコンストラクタ
-        taskDataAccess = new TaskDataAccess(); 
-        // TaskDataAccessオブジェクトを初期化
+    public TaskLogic() { // デフォルトコンストラクタ
+        taskDataAccess = new TaskDataAccess(); // TaskDataAccessオブジェクトを初期化
 
-        logDataAccess = new LogDataAccess(); 
-        // LogDataAccessオブジェクトを初期化
+        logDataAccess = new LogDataAccess(); // LogDataAccessオブジェクトを初期化
 
-        userDataAccess = new UserDataAccess(); 
-        // UserDataAccessオブジェクトを初期化
+        userDataAccess = new UserDataAccess(); // UserDataAccessオブジェクトを初期化
     }
 
+    // 他のコンポーネントを外部から受け取るコンストラクタ
     public TaskLogic(TaskDataAccess taskDataAccess, LogDataAccess logDataAccess, UserDataAccess userDataAccess) {
-        // 他のコンポーネントを外部から受け取るコンストラクタ
-        this.taskDataAccess = taskDataAccess; 
-        // 渡されたTaskDataAccessをフィールドに設定
+        this.taskDataAccess = taskDataAccess; // 渡されたTaskDataAccessをフィールドに設定
 
-        this.logDataAccess = logDataAccess; 
-        // 渡されたLogDataAccessをフィールドに設定
+        this.logDataAccess = logDataAccess; // 渡されたLogDataAccessをフィールドに設定
 
-        this.userDataAccess = userDataAccess; 
-        // 渡されたUserDataAccessをフィールドに設定
+        this.userDataAccess = userDataAccess; // 渡されたUserDataAccessをフィールドに設定
     }
 
     /**
@@ -51,31 +41,29 @@ public class TaskLogic {
      * @see com.taskapp.dataaccess.TaskDataAccess#findAll()
      * @param loginUser ログインユーザー
      */
-    public void showAll(User loginUser) {
-        // タスクの一覧を取得する
-        List<Task> tasks = taskDataAccess.findAll();
-        // 表示するタスクの番号を管理する変数
+    public void showAll(User loginUser) { // タスクの一覧を取得する
+        List<Task> tasks = taskDataAccess.findAll(); // 表示するタスクの番号を管理する変数
         int index = 1;
 
         // 取得したタスクを1件ずつ処理する
         for (Task task : tasks) {
             // タスクのステータスを文字列に変換する
             String taskStatus = switch (task.getStatus()) {
-                case 0 -> "未着手"; 
+                case 0 -> "未着手";
                 // ステータスが0の場合は"未着手"
-                case 1 -> "着手中"; 
+                case 1 -> "着手中";
                 // ステータスが1の場合は"着手中"
-                case 2 -> "完了"; 
+                case 2 -> "完了";
                 // ステータスが2の場合は"完了"
-                default -> "不明"; 
+                default -> "不明";
                 // ステータスがそれ以外の場合は"不明"
             };
 
             // タスクの担当者がログインユーザーかどうかを判定
             String assignee = task.getRepUser().equals(loginUser)
-                    ? "あなたが担当しています" 
+                    ? "あなたが担当しています"
                     // ログインユーザーが担当者の場合
-                    : task.getRepUser().getName(); 
+                    : task.getRepUser().getName();
                     // それ以外の場合は担当者の名前を取得
 
             // タスク情報をフォーマットしてコンソールに出力する
@@ -126,9 +114,26 @@ public class TaskLogic {
      * @param loginUser ログインユーザー
      * @throws AppException タスクコードが存在しない、またはステータスが前のステータスより1つ先でない場合にスローされます
      */
-    // public void changeStatus(int code, int status,
-    // User loginUser) throws AppException {
-    // }
+    public void changeStatus(int code, int status, User loginUser) throws AppException {
+    //タスクを検索
+    Task task = taskDataAccess.findByCode(code);
+    if (task == null) {
+        throw new AppException("存在するタスクコードを入力してください");
+    }
+
+    // 現在のステータスが変更後のステータスの1つ前であることを確認
+    if ((task.getStatus() == 0 && status != 1) || (task.getStatus() == 1 && status != 2)) {
+        throw new AppException("ステータスは、前のステータスより1つ先のもののみを選択してください");
+    }
+
+    // ステータスの更新
+    task.setStatus(status);
+    taskDataAccess.update(task);
+
+    // ログの記録
+    Log log = new Log(task.getCode(), loginUser.getCode(), status, LocalDate.now());
+    logDataAccess.save(log);
+}
 
     /**
      * タスクを削除します。

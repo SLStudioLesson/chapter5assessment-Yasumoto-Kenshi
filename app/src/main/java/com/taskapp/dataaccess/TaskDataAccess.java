@@ -1,24 +1,26 @@
 package com.taskapp.dataaccess;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter; // ファイル書き込みのためのクラス
-import java.io.FileReader; // ファイル読み込みのためのクラス
-import java.io.FileWriter; // ファイル書き込みのためのクラス
-import java.io.IOException; // 入出力例外処理のためのクラス
-import java.util.ArrayList;
-import java.util.List;
+import java.io.BufferedReader;  // ファイル読み込みのためのクラス
+import java.io.BufferedWriter;  // ファイル書き込みのためのクラス
+import java.io.FileReader;      // ファイルを読み取るためのクラス
+import java.io.FileWriter;      // ファイルを書き込むためのクラス
+import java.io.IOException;     // 入出力例外を処理するためのクラス
+import java.util.ArrayList;     // 動的配列のためのクラス
+import java.util.List;          // リスト型データ構造のためのインターフェース
 
-import com.taskapp.model.Task;
-import com.taskapp.model.User;
+import com.taskapp.model.Task; // タスクモデルクラスをインポート
+import com.taskapp.model.User; // ユーザーモデルクラスをインポート
 
+// タスクデータアクセスを行うクラス
 public class TaskDataAccess {
 
-    private final String filePath; // タスクデータのCSVファイルのパス
+    private final String filePath; // タスクデータのCSVファイルパスを保持
     private final UserDataAccess userDataAccess; // ユーザーデータアクセス用のインスタンス
 
+    // デフォルトコンストラクタ: デフォルトのファイルパスとUserDataAccessを使用
     public TaskDataAccess() {
-        filePath = "app/src/main/resources/tasks.csv"; // デフォルトのCSVファイルパス
-        userDataAccess = new UserDataAccess(); // デフォルトのUserDataAccessインスタンスを生成
+        filePath = "app/src/main/resources/tasks.csv"; // デフォルトのCSVファイルパスを設定
+        userDataAccess = new UserDataAccess(); // ユーザーデータアクセスインスタンスを生成
     }
 
     /**
@@ -27,54 +29,38 @@ public class TaskDataAccess {
      * @param userDataAccess ユーザーデータアクセスインスタンス
      */
     public TaskDataAccess(String filePath, UserDataAccess userDataAccess) {
-        this.filePath = filePath; // 指定されたCSVファイルパスを使用
-        this.userDataAccess = userDataAccess; // 指定されたUserDataAccessインスタンスを使用
+        this.filePath = filePath; // 指定されたファイルパスを使用
+        this.userDataAccess = userDataAccess; // 指定されたユーザーデータアクセスを使用
     }
 
     /**
-     * 設問2追加
      * CSVから全てのタスクデータを取得します。
-     *
-     * @see com.taskapp.dataaccess.UserDataAccess#findByCode(int)
      * @return タスクのリスト
      */
     public List<Task> findAll() {
-        // タスクのリストを格納するためのリストを初期化
-        List<Task> tasks = new ArrayList<>();
+        List<Task> tasks = new ArrayList<>(); // タスクのリストを格納するための動的配列を初期化
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
-            // ファイルから1行ずつ読み込むためのBufferedReaderを作成
-            String line;
+            String line; // ファイルの1行を保持する変数
             reader.readLine(); // ヘッダー行をスキップ
 
-            // ファイルの内容を1行ずつ読み込む
-            while ((line = reader.readLine()) != null) {
-                // 読み込んだ行をカンマで区切って分割する
-                String[] values = line.split(",");
-                // 必要な列数があるか確認する
-                if (values.length == 4) {
-                    // タスクコードを整数に変換
-                    int code = Integer.parseInt(values[0].trim());
-                    // タスク名を取得
-                    String name = values[1].trim();
-                    // ステータスを整数に変換
-                    int status = Integer.parseInt(values[2].trim());
-                    // 担当ユーザーコードを整数に変換
-                    int repUserCode = Integer.parseInt(values[3].trim());
+            while ((line = reader.readLine()) != null) {                    // ファイルの内容を1行ずつ読み込む
+                String[] values = line.split(",");                    // 行をカンマで区切って分割する
+                if (values.length == 4) {                                   // 必要な列数（4列）があるか確認
+                    int code = Integer.parseInt(values[0].trim());          // タスクコードを整数に変換
+                    String name = values[1].trim();                         // タスク名を取得
+                    int status = Integer.parseInt(values[2].trim());        // ステータスを整数に変換
+                    int repUserCode = Integer.parseInt(values[3].trim());   // 担当ユーザーコードを整数に変換
+                    User repUser = userDataAccess.findByCode(repUserCode);  // 担当ユーザーコードを基にユーザー情報を取得
 
-                    // 担当ユーザーコードを基にユーザー情報を取得
-                    User repUser = userDataAccess.findByCode(repUserCode);
-                    // 担当ユーザーが存在する場合のみタスクをリストに追加
-                    if (repUser != null) {
-                        tasks.add(new Task(code, name, status, repUser));
+                    if (repUser != null) { // 担当ユーザーが存在する場合のみタスクをリストに追加
+                        tasks.add(new Task(code, name, status, repUser)); // タスクリストに追加
                     }
                 }
             }
-        } catch (IOException e) {
-            // ファイル読み込み時の例外をキャッチしてスタックトレースを出力
-            e.printStackTrace();
+        } catch (IOException e) { // ファイル読み込み時の例外を処理
+            e.printStackTrace(); // スタックトレースを出力
         }
-        // タスクのリストを返す
-        return tasks;
+        return tasks; // タスクのリストを返す
     }
 
     /**
@@ -83,60 +69,48 @@ public class TaskDataAccess {
      */
     public void save(Task task) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath, true))) {
-            // CSVフォーマットでデータを書き込む
             String line = String.format("%d,%s,%d,%d", 
-                task.getCode(), task.getName(), task.getStatus(), task.getRepUser().getCode());
-            writer.write(line); // 書き込み
-            writer.newLine(); // 改行
-        } catch (IOException e) {
-            // ファイル書き込み時の例外をキャッチしてスタックトレースを出力
-            e.printStackTrace();
+                task.getCode(), task.getName(), task.getStatus(), task.getRepUser().getCode()); // タスク情報をフォーマット
+            writer.write(line);   // データを書き込む
+            writer.newLine();     // 改行
+        } catch (IOException e) { // ファイル書き込み時の例外を処理
+            e.printStackTrace();  // スタックトレースを出力
         }
     }
 
     /**
-     * コードを基にタスクデータを1件取得します。
-     * @param code 取得するタスクのコード
-     * @return 取得したタスク
+     * 指定されたタスクコードに対応するタスクを検索します。
+     * @param code タスクコード
+     * @return 該当するタスク、存在しない場合は null
      */
-    // public Task findByCode(int code) {
-    //     try () {
-
-    //     } catch (IOException e) {
-    //         e.printStackTrace();
-    //     }
-    //     return null;
-    // }
+    public Task findByCode(int code) {
+        List<Task> tasks = findAll();       // 全てのタスクを取得
+        for (Task task : tasks) {           // 各タスクを確認
+            if (task.getCode() == code) {   // コードが一致するタスクを返す
+                return task;
+            }
+        }
+        return null; // 該当するタスクが存在しない場合はnullを返す
+    }
 
     /**
      * タスクデータを更新します。
      * @param updateTask 更新するタスク
      */
-    // public void update(Task updateTask) {
-    //     try () {
-
-    //     } catch (IOException e) {
-    //         e.printStackTrace();
-    //     }
-    // }
-
-    /**
-     * コードを基にタスクデータを削除します。
-     * @param code 削除するタスクのコード
-     */
-    // public void delete(int code) {
-    //     try () {
-
-    //     } catch (IOException e) {
-    //         e.printStackTrace();
-    //     }
-    // }
-
-    /**
-     * タスクデータをCSVに書き込むためのフォーマットを作成します。
-     * @param task フォーマットを作成するタスク
-     * @return CSVに書き込むためのフォーマット文字列
-     */
-    // private String createLine(Task task) {
-    // }
+    public void update(Task updateTask) {
+        List<Task> tasks = findAll(); // 全てのタスクを取得
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
+            writer.write("Code,Name,Status,RepUserCode"); // ヘッダー行を書き込む
+            writer.newLine(); // 改行
+            for (Task task : tasks) { // 各タスクを確認
+                if (task.getCode() == updateTask.getCode()) { // 更新対象のタスクか確認
+                    task = updateTask; // タスクのデータを更新
+                }
+                writer.write(String.format("%d,%s,%d,%d", task.getCode(), task.getName(), task.getStatus(), task.getRepUser().getCode())); // タスク情報をCSVフォーマットで書き込む
+                writer.newLine(); // 改行
+            }
+        } catch (IOException e) { // ファイル書き込み時の例外を処理
+            e.printStackTrace(); // スタックトレースを出力
+        }
+    }
 }
